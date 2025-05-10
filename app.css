@@ -1,0 +1,78 @@
+/* General Styles */
+* {
+    margin: 20px;
+}
+
+body {
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Container Styles */
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 500px;
+    width: 450px;
+}
+
+/* Dropzone Styles */
+.dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-style: dashed;
+    width: 325px;
+    height: 400px;
+}
+
+/* Button Group Styles */
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    border-radius: 50%;
+}
+
+/* Modal Styles */
+.modal-body {
+    padding: 10px; /* Reduce padding inside the modal body */
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Adjust spacing between form elements */
+    padding-top: 10px; /* Reduce top padding */
+    padding-bottom: 10px; /* Reduce bottom padding */
+}
+
+/* Modal Button Group Styles */
+.modal-button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+/* Modal Header Styles */
+.modal-header {
+    margin-bottom: 0; /* Remove bottom margin */
+    padding-bottom: 10px; /* Reduce padding */
+}
+
+/* Form Group Styles */
+.form-group {
+    margin-bottom: 10px; /* Reduce spacing between form groups */
+}
+
+/* Heading Styles */
+.heading {
+    padding-top: 40px; /* Adjust the value as needed */
+    text-align: center; /* Optional: Center-align the text */
+}
+

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMCE Automated Attendance System</title>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/server/static/css/app.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="heading">
+            <h2>KMCE Automated Attendance System</h2>
+        </div>
+
+        <div class="upload-portion">
+            <!-- Live Camera Feed -->
+            <video id="cameraFeed" autoplay style="width: 100%; height: auto;"></video>
+            <br>
+            <div class="form-group mt-3">
+                <label for="verifyCandidateId">Enter Candidate ID</label>
+                <input type="text" class="form-control" id="verifyCandidateId" placeholder="Enter candidate ID">
+            </div>
+            <div class="button-group mt-3">
+                <button id="verifyBtn" type="button" class="btn btn-primary">Verify Candidate</button>
+            </div>
+            <div class="button-group">
+                <button id="registerBtn" type="button" class="btn btn-info" data-toggle="modal" data-target="#registerModal">New Register</button>
+            </div>
+        </div>
+
+        <div id="recognizedName" class="mt-3 text-success"></div>
+
+        <div class="submit mt-3"></div>
+            <button id="submitBtn" type="button" class="btn btn-success">Submit</button>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1" role="dialog" aria-labelledby="registerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registerModalLabel">Register Candidate</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="registrationForm">
+                        <div class="form-group">
+                            <label for="candidateId">Candidate ID</label>
+                            <input type="text" class="form-control" id="candidateId" placeholder="Enter candidate ID" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="candidateName">Candidate Name</label>
+                            <input type="text" class="form-control" id="candidateName" placeholder="Enter candidate name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="candidateEmail">Candidate Email</label>
+                            <input type="email" class="form-control" id="candidateEmail" placeholder="Enter candidate email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Capture Image</label>
+                            <video id="cameraFeedModal" autoplay playsinline class="dropzone"></video>
+                            <canvas id="capturedImageModal" style="display: none;"></canvas>
+                            <div class="modal-button-group"></div>
+                                <button type="button" id="captureModalBtn" class="btn btn-primary">Capture Image</button>
+                                <button type="button" id="submitModalButton" class="btn btn-success">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    <script src="/server/static/js/dropzone.min.js"></script>
+    <script src="/server/static/js/registration.js"></script>
+
+    <script>
+        // Access the Camera
+        async function startCamera() {
+            try {
+                const video = document.getElementById("cameraFeed");
+
+                // Stop any existing video stream
+                if (video.srcObject) {
+                    const tracks = video.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                }
+
+                // Start a new video stream
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+
+                // Play the video and handle any errors
+                await video.play();
+            } catch (error) {
+                alert("Error accessing camera: " + error.message);
+                console.error("Camera error:", error);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", startCamera);
+
+        // Capture Image from Video Stream
+        document.getElementById("captureModalBtn").addEventListener("click", function () {
+            const video = document.getElementById("cameraFeedModal");
+            const canvas = document.getElementById("capturedImageModal");
+            const context = canvas.getContext("2d");
+
+            // Set canvas dimensions to match the video feed
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw the current video frame onto the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the canvas image to Base64
+            const imageData = canvas.toDataURL("image/jpeg");
+            localStorage.setItem("capturedImage", imageData); // Store the image temporarily
+
+            alert("Image Captured! You can now register the candidate.");
+        });
+
+        // Handle Registration Form Submission
+        document.getElementById("submitModalButton").addEventListener("click", async () => {
+            const candidateId = document.getElementById('candidateId').value;
+            const candidateName = document.getElementById('candidateName').value;
+
+            if (!candidateId || !candidateName) {
+                alert("All fields are required!");
+                return;
+            }
+
+            const base64Image = localStorage.getItem("capturedImage");
+            if (!base64Image) {
+                alert("Please capture an image first!");
+                return;
+            }
+
+            // Prepare the data to send to the backend
+            const data = {
+                candidate_id: candidateId,
+                candidate_name: candidateName,
+                image_data: base64Image.split(',')[1] // Remove the "data:image/*;base64," prefix
+            };
+
+            try {
+                // Send the POST request to the Flask API
+                const response = await fetch('http://127.0.0.1:5000/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    $('#registerModal').modal('hide'); // Close the modal
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Failed to connect to the server. Please ensure the backend server is running and accessible at the specified URL. Check the console for more details.");
+                console.error("Fetch error:", error);
+            }
+        });
+
+        // Handle Candidate Verification
+        document.getElementById("verifyBtn").addEventListener("click", async () => {
+            const candidateId = document.getElementById("verifyCandidateId").value;
+
+            if (!candidateId) {
+                alert("Please enter a Candidate ID!");
+                return;
+            }
+
+            try {
+                // Optionally, you can verify the Candidate ID with the backend
+                const response = await fetch(`http://127.0.0.1:5000/verify/${candidateId}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Candidate Verified: ${result.name}`);
+                    document.getElementById("recognizedName").innerText = `Welcome, ${result.name}!`;
+
+                    // Start the live camera feed
+                    startCamera();
+                } else {
+                    alert(`Verification Failed: ${result.error}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Failed to verify the candidate. Please ensure the backend server is running.");
+            }
+        });
+    </script>
+</body>
+
+</html>
